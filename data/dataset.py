@@ -1,7 +1,8 @@
+import os, cv2
 import numpy as np
-import os, cv2, imgaug
 from glob import glob
 from einops import rearrange
+import imgaug.augmenters as iaa
 
 import torch
 import torch.nn as nn
@@ -11,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor, Normalize, Compose, ToPILImage, RandomHorizontalFlip
 
-from data import rand_perlin_2d_np
+from data.perlin import rand_perlin_2d_np
 from utils import torch_seed
 
 from typing import Union, List, Tuple
@@ -36,7 +37,7 @@ class MemSegDataset(Dataset):
         self.file_list = glob(os.path.join(self.datadir, self.target, 'train/*/*' if train else 'test/*/*'))
 
         # Load texture image file list
-        if texture_source_dir is not None:
+        if texture_source_dir:
             self.texture_source_file_list = glob(os.path.join(texture_source_dir, '*/*'))
 
         # Synthetic anomaly
@@ -72,7 +73,8 @@ class MemSegDataset(Dataset):
         if 'good' in file_path:
             mask = np.zeros(self.resize, dtype=np.float32)
         else:
-            mask = cv2.imread(file_path.replace('test', 'ground_truth').replace('.png', '_mask.png'), cv2.IMREAD_GRAYSCALE)
+            mask = cv2.imread(
+                file_path.replace('test', 'ground_truth').replace('.png', '_mask.png'), cv2.IMREAD_GRAYSCALE)
             mask = cv2.resize(mask, dsize=self.resize).astype(np.bool).astype(np.int)
 
         # Anomaly Source
@@ -88,24 +90,24 @@ class MemSegDataset(Dataset):
         img = self.transform(img)
         mask = torch.Tensor(mask).to(torch.int64)
 
-        return img, target, mask
+        return img, mask, target
 
     def rand_augment(self):
         augmenters = [
-            imgaug.GammaContrast((0.5, 2.0), per_channel=True),
-            imgaug.MultiplyAndAddToBrightness(mul=(0.8, 1.2), add=(-30, 30)),
-            imgaug.pilllike.EnhanceSharpness(),
-            imgaug.AddToHueAndSaturation((-50, 50), per_channel=True),
-            imgaug.Solarize(0.5, threshold=(32, 128)),
-            imgaug.Posterize(),
-            imgaug.Invert(),
-            imgaug.pilllike.Autocontrast(),
-            imgaug.pilllike.Equalize(),
-            imgaug.Affine(rotate=(-45, 45))
+            iaa.GammaContrast((0.5, 2.0), per_channel=True),
+            iaa.MultiplyAndAddToBrightness(mul=(0.8, 1.2), add=(-30, 30)),
+            iaa.pillike.EnhanceSharpness(),
+            iaa.AddToHueAndSaturation((-50, 50), per_channel=True),
+            iaa.Solarize(0.5, threshold=(32, 128)),
+            iaa.Posterize(),
+            iaa.Invert(),
+            iaa.pillike.Autocontrast(),
+            iaa.pillike.Equalize(),
+            iaa.Affine(rotate=(-45, 45))
         ]
 
         aug_idx = np.random.choice(np.arange(len(augmenters)), 3, replace=False)
-        aug = imgaug.Sequential([
+        aug = iaa.Sequential([
             augmenters[aug_idx[0]],
             augmenters[aug_idx[1]],
             augmenters[aug_idx[2]]
@@ -172,7 +174,7 @@ class MemSegDataset(Dataset):
         perlin_noise = rand_perlin_2d_np((self.resize[0], self.resize[1]), (perlin_scalex, perlin_scaley))
 
         # Applying affine transform
-        rot = imgaug.Affine(rotate=(-90, 90))
+        rot = iaa.Affine(rotate=(-90, 90))
         perlin_noise = rot(image=perlin_noise)
 
         # Making a mask by applying threshold
@@ -198,33 +200,33 @@ class MemSegDataset(Dataset):
         texture_source_img = cv2.imread(self.texture_source_file_list[idx])
         texture_source_img = cv2.cvtColor(texture_source_img, cv2.COLOR_BGR2RGB)
         texture_source_img = cv2.resize(texture_source_img, dsize=self.resize).astype(np.float32)
-
+        
         return texture_source_img
 
     def _structure_source(self, img: np.ndarray) -> np.ndarray:
         structure_source_img = self.rand_augment()(image=img)
-        assert self.resize[0] % self.structure_grid_size == 0, "Structure should be divided by grid size accurately"
+        
+        assert self.resize[0] % self.structure_grid_size == 0, 'structure should be devided by grid size accurately'
         grid_w = self.resize[0] // self.structure_grid_size
         grid_h = self.resize[1] // self.structure_grid_size
-
+        
         structure_source_img = rearrange(
-            tensor = structure_source_img,
-            pattern='(h gh) (w gw) c -> (h w) gw gh c',
-            gw = grid_w,
-            gh = grid_h,
+            tensor  = structure_source_img, 
+            pattern = '(h gh) (w gw) c -> (h w) gw gh c',
+            gw      = grid_w, 
+            gh      = grid_h
         )
-
         disordered_idx = np.arange(structure_source_img.shape[0])
         np.random.shuffle(disordered_idx)
 
         structure_source_img = rearrange(
-            tensor = structure_source_img[disordered_idx],
-            pattern='(h w) gw gh c -> (h gh) (w gw) c',
-            h = self.structure_grid_size,
-            w = self.structure_grid_size,
+            tensor  = structure_source_img[disordered_idx], 
+            pattern = '(h w) gw gh c -> (h gh) (w gw) c',
+            h       = self.structure_grid_size,
+            w       = self.structure_grid_size
         ).astype(np.float32)
-
+        
         return structure_source_img
-
+        
     def __len__(self):
         return len(self.file_list)
