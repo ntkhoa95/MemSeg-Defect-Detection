@@ -1,3 +1,3 @@
-from . import dataset
-from . import factor
-from . import perlin
+from .dataset import *
+from .perlin import *
+from .factor import *
