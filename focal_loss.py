@@ -4,6 +4,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
+    """
+    This class implements focal loss.
+    Focalloss = -1*alpha*(1-pt)*log(pt)
+    :param alpha: (tensor) 3D or 4D the scalar factor for this criterion
+    :param gamma: (float, double) gamma > 0 reduces the relative loss for well-classified examples (p>0.5) putting more
+                    focus on hard misclassified examples
+                    0 means deterministic, >0 favors focus more on classified examples
+    :param size_average: (bool, optional) By default, the losses are averaged over each loss element in the batch
+    """ 
     def __init__(self, gamma=0, alpha=None, size_average=True):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
