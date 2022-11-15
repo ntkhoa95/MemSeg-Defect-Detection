@@ -60,7 +60,9 @@ def training(model, trainloader, validloader, criterion, optimizer, scheduler, n
 
         end = time.time()
         for inputs, masks, targets in trainloader:
-            # batch
+            # inputs.shape:     Tensor [N, 3, 256, 256]
+            # masks.shape:      Tensor [N, 256, 256]
+            # targets.shape:    Tensor [N]
             inputs, masks, targets = inputs.to(device), masks.to(device), targets.to(device)
 
             data_time_m.update(time.time() - end)
@@ -151,7 +153,7 @@ def training(model, trainloader, validloader, criterion, optimizer, scheduler, n
                 break
 
     # print best score and step
-    _logger.info('Best Metric: {0:.3%} (step {1:})'.format(best_score, state['best_step']))
+    _logger.info('Best Metric: {0:.4%} (step {1:})'.format(best_score, state['best_step']))
 
     # save latest model
     torch.save(model.state_dict(), os.path.join(savedir, f'latest_model.pt'))
@@ -202,7 +204,7 @@ def evaluate(model, dataloader, criterion, log_interval, device='cpu'):
 
     }
 
-    _logger.info('TEST: AUROC-image: %.3f%% | AUROC-pixel: %.3f%% | AUPRO-pixel: %.3f%%' % 
-                (metrics['AUROC-image'], metrics['AUROC-pixel'], metrics['AUPRO-pixel']))
+    _logger.info('TEST: AUROC-image: %.4f%% | AUROC-pixel: %.4f%% | AUPRO-pixel: %.4f%%' % 
+                (metrics['AUROC-image']*100, metrics['AUROC-pixel']*100, metrics['AUPRO-pixel']*100))
 
     return metrics
