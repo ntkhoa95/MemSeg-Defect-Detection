@@ -22,6 +22,9 @@ class MemSeg(nn.Module):
 
         # Extracting concatenated information (CI)
         concatenated_features = self.memory_module.select(features=f_ii)
+        # concatenated_features[0].shape - Tensor [N, 128, 64, 64]
+        # concatenated_features[1].shape - Tensor [N, 256, 32, 32]
+        # concatenated_features[2].shape - Tensor [N, 512, 16, 16]
 
         # Multi-scale Feature Fusion (MSFF) Module
         msff_features = self.msff(features=concatenated_features)
