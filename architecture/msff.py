@@ -60,21 +60,13 @@ class MSFF(nn.Module):
         ci2_k = self.block2(ci2)      # [N, 128, 32, 32]
         ci3_k = self.block3(ci3)      # [N, 64, 64, 64]
 
-        # ci2_f = ci2_k + self.upconv32(ci1_k)       # [N, 128, 32, 32]
-        # ci3_f = ci3_k + self.upconv21(ci2_f)       # [N,  64, 64, 64]
+        ci2_sigma = ci2_k + self.upconv32(ci3_k)        # Element-wise summation
+        ci1_sigma = ci1_k + self.upconv21(ci2_sigma)    # Element-wise summation 
 
-        ci2_sigma = ci2_k + self.upconv32(ci3_k)
-        ci1_sigma = ci1_k + self.upconv21(ci2_sigma)
-
-        # spatial attention
-        # mask 
-        # m1 = ci1[:,256:,...].mean(dim=1, keepdim=True)
-        # m2 = ci2[:,128:,...].mean(dim=1, keepdim=True) * self.upsample(m1)
-        # m3 = ci3[:, 64:,...].mean(dim=1, keepdim=True) * self.upsample(m2)
-
-        m1 = ci1[:, :, ...].mean(dim=1, keepdim=True)
-        m2 = ci2[:, :, ...].mean(dim=1, keepdim=True) * self.upsample(m1)
-        m3 = ci3[:, :, ...].mean(dim=1, keepdim=True) * self.upsample(m2)
+        # Spatial Attention 
+        m1 = ci1[:, :, ...].mean(dim=1, keepdim=True)                       # Mask M1
+        m2 = ci2[:, :, ...].mean(dim=1, keepdim=True) * self.upsample(m1)   # Mask M2
+        m3 = ci3[:, :, ...].mean(dim=1, keepdim=True) * self.upsample(m2)   # Mask M3
 
         ci1_out = ci1_sigma * m1
         ci2_out = ci2_sigma * m2
@@ -84,17 +76,17 @@ class MSFF(nn.Module):
 
 if __name__ == "__main__":
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    # build feature extractor
+    # Build feature extractor
     feature_extractor = create_model(
         'resnet18', 
         pretrained    = True, 
         features_only = True)
-    ## freeze weight of layer1,2,3
+    # Freeze weight of layer 1,2,3
     for l in ['layer1','layer2','layer3']:
         for p in feature_extractor[l].parameters():
             p.requires_grad = False
 
-    batch_size = 4
+    batch_size = 8
     # Inputs [torch.Size([8, 128, 64, 64]) torch.Size([8, 256, 32, 32]) torch.Size([8, 512, 16, 16])]
     inputs_0 = torch.randn(batch_size, 128, 64, 64)
     inputs_1 = torch.randn(batch_size, 256, 32, 32)
