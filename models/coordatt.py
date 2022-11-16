@@ -77,17 +77,9 @@ class CoordAtt(nn.Module):
         a_h = self.conv_h(x_h).sigmoid()
         a_w = self.conv_w(x_w).sigmoid()
 
-        ## Test 1
-        # out = identify * a_h + identify * a_w
-        # out = se_att * out
-
-        ## Test 2
-        # out = identify * a_w * a_h * se_att
-
         # Original
         out = identify * a_w * a_h
 
-        # Test 3
         out += se_att
 
         return out
