@@ -25,28 +25,9 @@ class h_swish(nn.Module):
         return x * self.sigmoid(x)
 
 
-class SELayer(nn.Module):
-    def __init__(self, channel, reduction=32):
-        super(SELayer, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Sequential(
-            nn.Linear(channel, channel // reduction, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Linear(channel // reduction, channel, bias=False),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        b, c, _, _ = x.size()
-        y = self.avg_pool(x).view(b, c)
-        y = self.fc(y).view(b, c, 1, 1)
-        return x * y.expand_as(x)
-
-
 class CoordAtt(nn.Module):
     def __init__(self, in_channels, out_channels, reduction_ratio=32):
         super(CoordAtt, self).__init__()
-        self.se_block = SELayer(channel=in_channels)
         self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
         self.pool_w = nn.AdaptiveAvgPool2d((1, None))
         
@@ -60,7 +41,6 @@ class CoordAtt(nn.Module):
         self.conv_w = nn.Conv2d(mip, out_channels, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
-        se_att = self.se_block(x)
         identify = x
         N, C, H, W = x.size()
         x_h = self.pool_h(x)
@@ -77,10 +57,6 @@ class CoordAtt(nn.Module):
         a_h = self.conv_h(x_h).sigmoid()
         a_w = self.conv_w(x_w).sigmoid()
 
-        # Original
         out = identify * a_w * a_h
 
-        out += se_att
-
         return out
-
