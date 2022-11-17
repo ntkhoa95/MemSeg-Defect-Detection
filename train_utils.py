@@ -116,8 +116,6 @@ def training(model, trainloader, validloader,
             eval_metrics = evaluate(model, validloader, criterion, log_interval, device)
             val_score = np.mean(list(eval_metrics.values()))
             
-            # scheduler.step(val_score)
-
             eval_log = dict([(f'eval_{k}', v) for k, v in eval_metrics.items()])
 
             # wandb

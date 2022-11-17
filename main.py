@@ -151,12 +151,6 @@ def run(cfg):
     else:
         scheduler = None
 
-    # optimizer = torch.optim.SGD(params=filter(lambda p: p.requires_grad, model.parameters()), 
-    #                             lr=cfg['OPTIMIZER']['lr'], 
-    #                             weight_decay=cfg['OPTIMIZER']['weight_decay'], 
-    #                             momentum=0.9)
-    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95, last_epoch=-1)
-
     # Fitting model
     training(
         model              = model, 
