@@ -1,7 +1,7 @@
 # MemSeg-Defect-Detection
-An unofficial implementation of [*MemSeg: A semi-supervised method for image surface defect detection using differences and commonalities*](https://arxiv.org/pdf/2205.00908.pdf) using PyTorch.
+An unofficial implementation of [MemSeg: A semi-supervised method for image surface defect detection using differences and commonalities](https://arxiv.org/pdf/2205.00908.pdf) using PyTorch.
 
-### TO USE
+### **TO USE**
 1. Clone the repository
 ```
 git clone https://github.com/ntkhoa95/MemSeg-Defect-Detection
@@ -21,9 +21,9 @@ https://www.mvtec.com/company/research/datasets/mvtec-ad
 python main.py --object_name capsule
 ```
 
-### Results
+### **RESULTS**
 
-MVTec Dataset
+*MVTec Dataset*
 
 |    | target     |   AUROC-image |   AUROC-pixel |   AUPRO-pixel |
 |---:|:-----------|--------------:|--------------:|--------------:|
@@ -42,7 +42,7 @@ MVTec Dataset
 | 12 | pill       |               |               |               |
 |    | **Average**    |           |               |               |
 
-### Citation
+### **CITATION**
 ```
 @article{DBLP:journals/corr/abs-2205-00908,
   author    = {Minghui Yang and
