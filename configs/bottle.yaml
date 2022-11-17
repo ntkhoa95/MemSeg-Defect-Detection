@@ -1,4 +1,4 @@
-EXP_NAME: MemSeg
+EXP_NAME: MemSeg-Original
 SEED: 42
 
 DATASET:
@@ -6,12 +6,12 @@ DATASET:
   texture_source_dir: './datasets/dtd/images'
   target: 'bottle'
   resize: !!python/tuple
-    - 256 # height
-    - 256 # width
+    - 256    # height
+    - 256    # width
   structure_grid_size: 8
   transparency_range:
-    - 0.15 # under bound
-    - 1. # upper bound
+    - 0.15   # under bound
+    - 1.     # upper bound
   perlin_scale: 6
   min_perlin_scale: 0
   perlin_noise_threshold: 0.5
@@ -49,4 +49,4 @@ LOG:
   eval_interval: 100
 
 RESULT:
-  savedir: './saved_model'
+  savedir: './saved_model/original'

@@ -4,21 +4,21 @@ SEED: 42
 DATASET:
   datadir: './datasets/MVTec'
   texture_source_dir: './datasets/dtd/images'
-  target: 'capsule'
+  target: 'leather'
   resize: !!python/tuple
-    - 256 # height
-    - 256 # width
+    - 256    # height
+    - 256    # width
   structure_grid_size: 8
   transparency_range:
-    - 0.15 # under bound
-    - 1. # upper bound
+    - 0.15   # under bound
+    - 1.     # upper bound
   perlin_scale: 6
   min_perlin_scale: 0
   perlin_noise_threshold: 0.5
 
 DATALOADER:
   batch_size: 8
-  num_workers: 4 
+  num_workers: 4
 
 MEMORYBANK:
   nb_memory_sample: 30
