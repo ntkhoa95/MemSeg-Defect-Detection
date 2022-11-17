@@ -2,6 +2,7 @@ import torch, math
 import torch.nn as nn
 import torch.nn.functional as F
 from .coordatt import CoordAtt
+# from .coordattwse import CoordAttwSE
 from timm import create_model
 
 class MSFFBlock(nn.Module):
@@ -9,6 +10,7 @@ class MSFFBlock(nn.Module):
         super(MSFFBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_channel, in_channel, kernel_size=3, stride=1, padding=1)
         self.attn = CoordAtt(in_channel, in_channel)
+        # self.attn = CoordAttwSE(in_channel, in_channel)
         self.conv2 = nn.Sequential(
             nn.Conv2d(in_channel, in_channel // 2, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(in_channel // 2, in_channel // 2, kernel_size=3, stride=1, padding=1)

@@ -16,9 +16,9 @@ class MemSeg(nn.Module):
 
     def forward(self, inputs):
         features = self.encoder(inputs)
-        f_in = features[0]
+        f_in  = features[0]
         f_out = features[-1]
-        f_ii = features[1:-1]
+        f_ii  = features[1:-1]
 
         # Extracting concatenated information (CI)
         concatenated_features = self.memory_module.select(features=f_ii)
