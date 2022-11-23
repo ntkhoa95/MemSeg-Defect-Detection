@@ -25,7 +25,8 @@ class MemSegDataset(Dataset):
                 to_memory: bool=False, resize: Tuple[int, int]=(224, 224),
                 texture_source_dir: str=None, structure_grid_size: str=8,
                 transparency_range: List[float] =[0.15, 1.],
-                perlin_scale: int=6, min_perlin_scale: int=0, perlin_noise_threshold: float=0.5):
+                perlin_scale: int=6, min_perlin_scale: int=0, 
+                perlin_noise_threshold: float=0.5):
         
         # Mode
         self.train     = train
@@ -52,7 +53,9 @@ class MemSegDataset(Dataset):
         self.resize    = resize
         self.transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], 
+                std=[0.229, 0.224, 0.225])
         ])
 
         # Synthetic anomaly switch

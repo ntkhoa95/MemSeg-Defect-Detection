@@ -22,7 +22,7 @@ python main.py --object_name capsule
 ```
 
 ### **RESULTS**
-
+Using batch training of 8
 *MVTec Dataset*
 
 |    | target     |   AUROC-image |   AUROC-pixel |   AUPRO-pixel |
@@ -30,7 +30,7 @@ python main.py --object_name capsule
 |  0 | leather    |               |               |               |
 |  1 | wood       |               |               |               |
 |  2 | carpet     |               |               |               |
-|  3 | capsule    |               |               |               |
+|  3 | capsule    |     97.89     |     98.48     |     95.69     |
 |  4 | cable      |               |               |               |
 |  5 | metal_nut  |               |               |               |
 |  6 | tile       |               |               |               |
