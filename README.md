@@ -20,6 +20,10 @@ https://www.mvtec.com/company/research/datasets/mvtec-ad
 ```
 python main.py --object_name capsule
 ```
+4. Inference Mode
+```
+voila "inference.ipynb" --port 8866 --Voila.ip 127.0.0.1
+```
 
 ### **RESULTS**
 Using batch training of 8
