@@ -170,7 +170,7 @@ def run(cfg):
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(description='Fake News Detection - Task1')
+    parser = argparse.ArgumentParser(description='MemSeg Defect Detection')
     parser.add_argument('--yaml_config_dir', type=str, default='./configs', help='Config file directory')
     parser.add_argument('--object_name', type=str, default='capsule', help='Object in MVTec dataset')
     args = parser.parse_args()
