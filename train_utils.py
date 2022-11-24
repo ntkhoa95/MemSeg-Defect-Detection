@@ -135,19 +135,22 @@ def training(model, trainloader, validloader,
                 _logger.info('Best Score {0:.3%} to {1:.3%}'.format(best_score, val_score))
 
                 best_score = val_score
+                
+            # save latest model
+            torch.save(model.state_dict(), os.path.join(savedir, f'latest_model.pt'))
+            # save latest score
+            state = {'latest_step':_step}
+            state.update(eval_log)
+            json.dump(state, open(os.path.join(savedir, 'latest_score.json'),'w'), indent='\t')
 
         scheduler.step()
+
+
 
     # print best score and step
     _logger.info('Best Metric: {0:.3%} (step {1:})'.format(best_score, state['best_step']))
 
-    # save latest model
-    torch.save(model.state_dict(), os.path.join(savedir, f'latest_model.pt'))
 
-    # save latest score
-    state = {'latest_step':_step}
-    state.update(eval_log)
-    json.dump(state, open(os.path.join(savedir, 'latest_score.json'),'w'), indent='\t')
 
     
 def evaluate(model, dataloader, criterion, log_interval, device='cpu'):

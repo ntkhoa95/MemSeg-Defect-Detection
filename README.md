@@ -31,7 +31,7 @@ Using batch training of 8
 
 |    | target     |   AUROC-image |   AUROC-pixel |   AUPRO-pixel |
 |---:|:-----------|--------------:|--------------:|--------------:|
-|  0 | leather    |               |               |               |
+|  0 | leather    |         100   |      99.23    |     98.54     |
 |  1 | wood       |               |               |               |
 |  2 | carpet     |               |               |               |
 |  3 | capsule    |     97.89     |     98.48     |     95.69     |
