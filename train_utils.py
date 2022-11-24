@@ -155,7 +155,7 @@ def evaluate(model, dataloader, criterion, log_interval, device='cpu'):
     # Evaluation metrics
     auroc_image_metric = AUROC(num_classes=1, pos_label=1)
     auroc_pixel_metric = AUROC(num_classes=1, pos_label=1)
-    aupro_pixel_metric = AUPRO(num_classes=1, pos_label=1)
+    aupro_pixel_metric = AUPRO()
     with torch.no_grad():
         for idx, (inputs, masks, targets) in enumerate(dataloader):
             inputs, masks, targets = inputs.to(device), masks.to(device), targets.to(device)
