@@ -18,7 +18,7 @@ DATASET:
 
 DATALOADER:
   batch_size: 8
-  num_workers: 4
+  num_workers: 6
 
 MEMORYBANK:
   nb_memory_sample: 30
@@ -28,7 +28,7 @@ MODEL:
 
 TRAIN:
   batch_size: 8
-  num_training_steps: 5000
+  num_training_steps: 3000
   l1_weight: 0.6
   focal_weight: 0.4
   focal_alpha: null

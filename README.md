@@ -39,7 +39,7 @@ Using batch training of 8
 |  5 | metal_nut  |               |               |               |
 |  6 | tile       |               |               |               |
 |  7 | grid       |               |               |               |
-|  8 | bottle     |               |               |               |
+|  8 | bottle     |      100      |      98.59    |     95.10     |
 |  9 | zipper     |               |               |               |
 | 10 | transistor |               |               |               |
 | 11 | hazelnut   |               |               |               |
