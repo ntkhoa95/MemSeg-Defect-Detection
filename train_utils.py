@@ -145,8 +145,6 @@ def training(model, trainloader, validloader,
 
         scheduler.step()
 
-
-
     # print best score and step
     _logger.info('Best Metric: {0:.3%} (step {1:})'.format(best_score, state['best_step']))
 

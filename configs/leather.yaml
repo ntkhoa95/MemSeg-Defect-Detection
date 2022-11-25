@@ -18,7 +18,7 @@ DATASET:
 
 DATALOADER:
   batch_size: 8
-  num_workers: 6
+  num_workers: 2
 
 MEMORYBANK:
   nb_memory_sample: 30
