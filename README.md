@@ -17,6 +17,7 @@ https://www.robots.ox.ac.uk/~vgg/data/dtd/
 https://www.mvtec.com/company/research/datasets/mvtec-ad
 ```
 3. Run
+Before running the training program, please configure the datasets directory in the "./configs" folder
 ```
 python main.py --object_name capsule
 ```
