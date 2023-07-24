@@ -3,7 +3,7 @@ import numpy as np
 from glob import glob
 from einops import rearrange
 import imgaug.augmenters as iaa
-
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,8 +16,6 @@ from data.perlin import rand_perlin_2d_np
 from utils import torch_seed
 
 from typing import Union, List, Tuple
-
-
 
 
 class MemSegDataset(Dataset):
@@ -78,7 +76,7 @@ class MemSegDataset(Dataset):
         else:
             mask = cv2.imread(
                 file_path.replace('test', 'ground_truth').replace('.png', '_mask.png'), cv2.IMREAD_GRAYSCALE)
-            mask = cv2.resize(mask, dsize=self.resize).astype(np.bool).astype(np.int)
+            mask = cv2.resize(mask, dsize=self.resize).astype(bool).astype(np.int_)
 
         # Anomaly Source
         if not self.to_memory and self.train:
@@ -86,8 +84,28 @@ class MemSegDataset(Dataset):
                 img, mask = self.generate_anomaly(img=img)
                 target = 1
                 self.anomaly_switch = False
+
+                # ## DEBUG
+                # os.makedirs("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY", exist_ok=True)
+                # tik = str(time.time())
+                # img_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY/img_{tik}.png"
+                # mask_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY/mask_{tik}.png"
+                # if len(os.listdir("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY")) < 37:
+                #     cv2.imwrite(img_path, cv2.cvtColor(np.array(img).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                #     cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+
             else:
                 self.anomaly_switch = True
+
+        # else:
+        #     ## DEBUG
+        #     os.makedirs("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY", exist_ok=True)
+        #     tik = str(time.time())
+        #     img_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY/img_{tik}.png"
+        #     mask_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY/mask_{tik}.png"
+        #     if len(os.listdir("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY")) < 37:
+        #         cv2.imwrite(img_path, cv2.cvtColor(np.array(img).astype(np.uint8), cv2.COLOR_RGB2BGR))
+        #         cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
         # Convert ndarray into tensor
         img = self.transform(img)
@@ -106,7 +124,7 @@ class MemSegDataset(Dataset):
             iaa.Invert(),
             iaa.pillike.Autocontrast(),
             iaa.pillike.Equalize(),
-            iaa.Affine(rotate=(-45, 45))
+            iaa.Affine(rotate=(-45, 45)),
         ]
 
         aug_idx = np.random.choice(np.arange(len(augmenters)), 3, replace=False)
@@ -136,7 +154,7 @@ class MemSegDataset(Dataset):
         target_foreground_mask = self.generate_target_foreground_mask(img=img)
 
         # Perlin noise mask
-        perlin_noise_mask = self.generate_perlin_noise_mask()
+        perlin_noise_mask, perlin_noise = self.generate_perlin_noise_mask()
 
         # Mask
         mask = perlin_noise_mask * target_foreground_mask
@@ -153,18 +171,37 @@ class MemSegDataset(Dataset):
         ### Step 3: Blending image and anomaly source
         anomaly_source_img = ((-mask_expanded + 1)*img) + anomaly_source_img
 
+        ## DEBUG
+        os.makedirs("/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly", exist_ok=True)
+        tik = str(time.time())
+        img_path = f"/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly/img_{tik}.png"
+        mask_path = f"/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly/mask_{tik}.png"
+        perlin_path = f"/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly/perlin_{tik}.png"
+        if len(os.listdir("/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly")) < 51:
+            cv2.imwrite(img_path, cv2.cvtColor(np.array(anomaly_source_img).astype(np.uint8), cv2.COLOR_RGB2BGR))
+            cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+            cv2.imwrite(perlin_path, cv2.cvtColor(np.array(perlin_noise*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+
         return (anomaly_source_img.astype(np.uint8), mask)
 
     def generate_target_foreground_mask(self, img: np.ndarray) -> np.ndarray:
         # Converting RGB into grayscale
         img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        
+        mode = 1
+        if mode == 1: # USING THIS FOR NOT WHITE BACKGROUND
+            _, target_background_mask = cv2.threshold(img_gray, 100, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+            target_background_mask = target_background_mask.astype(bool).astype(int)
+            # Inverting mask for foreground mask
+            target_foreground_mask = -(target_background_mask - 1)
 
-        # Generating binary mask of grayscale image
-        _, target_background_mask = cv2.threshold(img_gray, 100, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        target_background_mask = target_background_mask.astype(np.bool).astype(np.int)
+        elif mode == 2: # USING THIS FOR DARK BACKGROUND
+            _, target_background_mask = cv2.threshold(img_gray, 100, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+            target_background_mask = target_background_mask.astype(bool).astype(int)
+            target_foreground_mask = target_background_mask
 
-        # Inverting mask for foreground mask
-        target_foreground_mask = -(target_background_mask - 1)
+        elif mode == 3:
+            target_foreground_mask = np.ones(img_gray.shape)
 
         return target_foreground_mask
 
@@ -178,14 +215,14 @@ class MemSegDataset(Dataset):
 
         # Applying affine transform
         rot = iaa.Affine(rotate=(-90, 90))
-        perlin_noise = rot(image=perlin_noise)
+        aug_perlin_noise = rot(image=perlin_noise)
 
         # Making a mask by applying threshold
-        mask_noise = np.where(perlin_noise > self.perlin_noise_threshold,
-                                np.ones_like(perlin_noise),
-                                np.zeros_like(perlin_noise))
+        mask_noise = np.where(aug_perlin_noise > self.perlin_noise_threshold,
+                                np.ones_like(aug_perlin_noise),
+                                np.zeros_like(aug_perlin_noise))
 
-        return mask_noise
+        return mask_noise, perlin_noise
 
     
     def anomaly_source(self, img: np.ndarray) -> np.ndarray:
