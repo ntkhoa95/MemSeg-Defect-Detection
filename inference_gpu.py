@@ -30,7 +30,7 @@ def load_dataset(object_name):
 def load_model(object_name):
     global model, cfg
     cfg = yaml.load(open(f'./configs/{object_name.split("-")[-1]}.yaml','r'), Loader=yaml.FullLoader)
-    memory_bank = torch.load(f'./checkpoints/original/{object_name}/memory_bank.pt')
+    memory_bank = torch.load(f'./saved_model/original/{object_name}/memory_bank.pt')
     
     for k in memory_bank.memory_information.keys():
         memory_bank.memory_information[k] = memory_bank.memory_information[k].cuda()
@@ -40,7 +40,7 @@ def load_model(object_name):
                                     features_only = True
                                     ).cuda()
     model = MemSeg(memory_module=memory_bank, encoder=encoder)
-    model.load_state_dict(torch.load(f'./checkpoints/original/{object_name}/best_model.pt'))
+    model.load_state_dict(torch.load(f'./saved_model/original/{object_name}/best_model.pt'))
 
     return model.cuda()
 
@@ -49,7 +49,7 @@ def minmax_scaling(img):
 
 def heatmap_on_image(heatmap, image):
     if heatmap.shape != image.shape:
-        heatmap = cv2.resize(heatmap, (image.shape[0], image.shape[1]))
+        heatmap = cv2.resize(heatmap, (image.shape[1], image.shape[0]))
     out = np.float32(heatmap)/255 + np.float32(image)/255
     out = out / np.max(out)
     return np.uint8(255 * out)
@@ -108,7 +108,7 @@ def inference_ui(img):
 
 if __name__ == "__main__":
 
-    model_list = 'MemSeg-Mode1-capsule'
+    model_list = 'MemSeg-Original-pad'
     print("Loading model ...")
     model = load_model(object_name=model_list)
     obj = model_list.split("-")[-1]
@@ -136,7 +136,9 @@ if __name__ == "__main__":
         # cv2.drawContours(contours_image, filter_contours, -1, 255, -1)
         # output_heatmap = cv2.applyColorMap(np.uint8(contours_image), cv2.COLORMAP_JET)
         # output_heatmap_bgr = cv2.cvtColor(output_heatmap, cv2.COLOR_RGB2BGR)
+        
         hm_on_img = heatmap_on_image(output_heatmap_bgr, img)
+        # hm_on_img_bgr = hm_on_img
         hm_on_img_bgr = cv2.cvtColor(hm_on_img, cv2.COLOR_BGR2RGB)
 
         contours_image = np.zeros((img.shape[0], img.shape[1]))
@@ -149,7 +151,7 @@ if __name__ == "__main__":
 
     elif mode == "test_folder":
         print("Processing folder:\t", obj)
-        fold = "crack"
+        fold = "broken"
         local_path = f"/mnt/data4/khoant/07.AD/MemSeg/datasets/MVTec/{obj}/test/{fold}"
         output_path = os.path.join(output_path, obj, fold)
         os.makedirs(output_path, exist_ok=True)
@@ -160,6 +162,7 @@ if __name__ == "__main__":
             img = cv2.imread(os.path.join(local_path, img_name))
             input = processing_input(img)
             filter_contours, output_heatmap_bgr = inference(input)
+            
             tok = timeit.timeit()
             # output = cv2.normalize(np.array(output), None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
             # _, output_binary = cv2.threshold(output, 0, 255, cv2.THRESH_BINARY)
@@ -175,6 +178,8 @@ if __name__ == "__main__":
             
             contours_image = np.zeros((output_heatmap_bgr.shape[0], output_heatmap_bgr.shape[1]))
             cv2.drawContours(contours_image, filter_contours, -1, 255, -1)
+            contours_image = cv2.resize(contours_image, (img.shape[1], img.shape[0]))
+            contours_image[contours_image != 0] = 255
         
             cv2.imwrite(os.path.join(output_path, f"{name}_in.png"), img)
             cv2.imwrite(os.path.join(output_path, f"{name}_out.png"), contours_image)
