@@ -33,20 +33,22 @@ TRAIN:
   focal_weight: 0.4
   focal_alpha: null
   focal_gamma: 4
-  use_wandb: True
+  use_wandb: False
 
 OPTIMIZER:
   lr: 0.003
   weight_decay: 0.0005
+  use_prodigy: False
 
 SCHEDULER:
   min_lr: 0.0001
   warmup_ratio: 0.1
   use_scheduler: True
+  use_prodigy: False
 
 LOG:
-  log_interval: 1
+  log_interval: 20
   eval_interval: 100
 
 RESULT:
-  savedir: './saved_model/original'
+  savedir: './checkpoints/original'
