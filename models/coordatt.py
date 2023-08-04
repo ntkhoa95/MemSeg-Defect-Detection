@@ -2,7 +2,7 @@
 Coordinate Attention for Efficient Mobile Network Design
 https://github.com/houqb/CoordAttention/blob/main/coordatt.py
 """
-
+import numpy as np
 import torch, math
 import torch.nn as nn
 import torch.nn.functional as F
@@ -24,12 +24,35 @@ class h_swish(nn.Module):
     def forward(self, x):
         return x * self.sigmoid(x)
 
+class AdaptiveAvgPool2dCustom(nn.Module):
+    def __init__(self, output_size):
+        super(AdaptiveAvgPool2dCustom, self).__init__()
+        self.output_size = output_size
+
+    def forward(self, x: torch.Tensor):
+        '''
+        Args:
+            x: shape (batch size, channel, height, width)
+        Returns:
+            x: shape (batch size, channel, 1, output_size)
+        '''
+
+        defaults = x.size()
+        output_size = np.array([v if v is not None else d for v, d in zip(self.output_size, defaults[-len(self.output_size) :])])
+        stride_size = np.floor(x.cpu().detach().numpy().shape[-2:] / output_size).astype(np.int32)
+        kernel_size = x.cpu().detach().numpy().shape[-2:] - (output_size - 1) * stride_size
+        avg = nn.AvgPool2d(kernel_size=list(kernel_size), stride=list(stride_size))
+        x = avg(x)
+        return x
 
 class CoordAtt(nn.Module):
     def __init__(self, in_channels, out_channels, reduction_ratio=32):
         super(CoordAtt, self).__init__()
-        self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
-        self.pool_w = nn.AdaptiveAvgPool2d((1, None))
+        # self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
+        # self.pool_w = nn.AdaptiveAvgPool2d((1, None))
+
+        self.pool_h = AdaptiveAvgPool2dCustom((None, 1))
+        self.pool_w = AdaptiveAvgPool2dCustom((1, None))
         
         mip = max(8, in_channels // reduction_ratio)
 
@@ -44,6 +67,7 @@ class CoordAtt(nn.Module):
         identify = x
         N, C, H, W = x.size()
         x_h = self.pool_h(x)
+
         x_w = self.pool_w(x).permute(0, 1, 3, 2)  # N,C,W,H
 
         y = torch.cat([x_h, x_w], dim=2)
