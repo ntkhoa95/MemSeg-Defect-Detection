@@ -1,0 +1,54 @@
+EXP_NAME: MS-Prodigy
+SEED: 42
+
+DATASET:
+  datadir: './datasets/MVTec'
+  texture_source_dir: './datasets/dtd/images'
+  target: 'pcb'
+  resize: !!python/tuple
+    - 256    # height
+    - 256    # width
+  structure_grid_size: 4
+  transparency_range:
+    - 0.5   # under bound
+    - 1.     # upper bound
+  perlin_scale: 6
+  min_perlin_scale: 4
+  perlin_noise_threshold: 0.5
+
+DATALOADER:
+  batch_size: 16
+  num_workers: 2
+
+MEMORYBANK:
+  nb_memory_sample: 30
+
+MODEL:
+  feature_extractor_name: 'resnet18'
+
+TRAIN:
+  batch_size: 16
+  num_training_steps: 3000
+  l1_weight: 0.6
+  focal_weight: 0.4
+  focal_alpha: null
+  focal_gamma: 4
+  use_wandb: False
+
+OPTIMIZER:
+  lr: 0.003
+  weight_decay: 0.0005
+  use_prodigy: True
+
+SCHEDULER:
+  min_lr: 0.0001
+  warmup_ratio: 0.1
+  use_scheduler: True
+  use_prodigy: True
+
+LOG:
+  log_interval: 20
+  eval_interval: 100
+
+RESULT:
+  savedir: './checkpoints/original'
