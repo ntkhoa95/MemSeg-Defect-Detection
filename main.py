@@ -1,21 +1,23 @@
-import os, yaml
+import os, yaml, cv2
 import json, wandb
 import logging, argparse
 
-import torch
+import torch, time
 import torch.nn as nn
 import torch.nn.functional as F
 
+import numpy as np
 from timm import create_model
 from data import create_dataset, create_dataloader
 
 from models import MemSeg, MemoryBank
-from focal_loss import FocalLoss
+from focal_loss import FocalLoss, DiceLoss, BinaryDiceLoss
 from train_utils import training
 from utils import setup_default_logging
 from utils import torch_seed
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from scheduler import CosineAnnealingWarmupRestarts
+from prodigyopt import Prodigy
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -28,7 +30,7 @@ def run(cfg):
     # setting seed and device
     setup_default_logging()
     torch_seed(cfg['SEED'])
-
+    torch.set_num_threads(1)
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     _logger.info('Device: {}'.format(device))
 
@@ -98,6 +100,17 @@ def run(cfg):
         num_workers = cfg['DATALOADER']['num_workers']
     )
 
+    inputs, masks, targets = next(iter(trainloader))
+    tik = str(time.time())
+    for k in range(inputs.shape[0]):
+        img = inputs[k]
+        img = (((img - img.min()) / (img.max() - img.min())) * 255).to(torch.uint8)
+        img = img.permute(1, 2, 0)
+        output_path = "./samples/DEBUG/ANOMALY"
+        os.makedirs(output_path, exist_ok=True)
+        if len(os.listdir(output_path)) < 21:
+            img_path = f"./samples/DEBUG/ANOMALY/img_{tik}_{k}.png"
+            # cv2.imwrite(img_path, cv2.cvtColor(np.array(img).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
     # build feature extractor
     feature_extractor = feature_extractor = create_model(
@@ -122,9 +135,8 @@ def run(cfg):
     _logger.info('Update {} normal samples in memory bank'.format(cfg['MEMORYBANK']['nb_memory_sample']))
 
     # build MemSeg
-    model = MemSeg(
-        memory_module       = memory_bank,
-        encoder = feature_extractor
+    model = MemSeg(memory_module=memory_bank,
+                   encoder = feature_extractor
     ).to(device)
 
     # Set training
@@ -133,21 +145,31 @@ def run(cfg):
         gamma = cfg['TRAIN']['focal_gamma'], 
         alpha = cfg['TRAIN']['focal_alpha']
     )
+    dice_criterion = DiceLoss()
 
-    optimizer = torch.optim.AdamW(
-        params       = filter(lambda p: p.requires_grad, model.parameters()), 
-        lr           = cfg['OPTIMIZER']['lr'], 
-        weight_decay = cfg['OPTIMIZER']['weight_decay'],
-    )
+    if cfg['OPTIMIZER']['use_prodigy']:
+        optimizer = Prodigy(params       = filter(lambda p: p.requires_grad, model.parameters()),
+                            lr           = 1.,
+                            weight_decay = cfg['OPTIMIZER']['weight_decay'],
+                            )
+    else:
+        optimizer = torch.optim.AdamW(
+            params       = filter(lambda p: p.requires_grad, model.parameters()), 
+            lr           = cfg['OPTIMIZER']['lr'], 
+            weight_decay = cfg['OPTIMIZER']['weight_decay'],
+        )
 
     if cfg['SCHEDULER']['use_scheduler']:
-        scheduler = CosineAnnealingWarmupRestarts(
-            optimizer, 
-            first_cycle_steps = cfg['TRAIN']['num_training_steps'],
-            max_lr = cfg['OPTIMIZER']['lr'],
-            min_lr = cfg['SCHEDULER']['min_lr'],
-            warmup_steps   = int(cfg['TRAIN']['num_training_steps'] * cfg['SCHEDULER']['warmup_ratio'])
-        )
+        if cfg['SCHEDULER']['use_prodigy']:
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg['TRAIN']['num_training_steps'])
+        else:
+            scheduler = CosineAnnealingWarmupRestarts(
+                optimizer, 
+                first_cycle_steps = cfg['TRAIN']['num_training_steps'],
+                max_lr = cfg['OPTIMIZER']['lr'],
+                min_lr = cfg['SCHEDULER']['min_lr'],
+                warmup_steps   = int(cfg['TRAIN']['num_training_steps'] * cfg['SCHEDULER']['warmup_ratio'])
+            )
     else:
         scheduler = None
 
