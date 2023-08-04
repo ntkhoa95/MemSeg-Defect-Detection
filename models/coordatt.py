@@ -64,11 +64,10 @@ class CoordAtt(nn.Module):
         self.conv_w = nn.Conv2d(mip, out_channels, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
-        identify = x
+        identify = x # [1, 512, 16, 16]
         N, C, H, W = x.size()
-        x_h = self.pool_h(x)
-
-        x_w = self.pool_w(x).permute(0, 1, 3, 2)  # N,C,W,H
+        x_h = self.pool_h(x) # x_h: [1, 512, 16, 1]
+        x_w = self.pool_w(x).permute(0, 1, 3, 2)  # N,C,W,H [1, 512, 1, 16]
 
         y = torch.cat([x_h, x_w], dim=2)
         y = self.conv1(y)
@@ -84,3 +83,9 @@ class CoordAtt(nn.Module):
         out = identify * a_w * a_h
 
         return out
+
+if __name__ == "__main__":
+    input_tensor = torch.randn(1, 512, 16, 16)
+    attention_engine = CoordAtt(in_channels=512, out_channels=512)
+    output = attention_engine(input_tensor)
+    print(output.shape)
