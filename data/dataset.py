@@ -16,7 +16,7 @@ from data.perlin import rand_perlin_2d_np
 from utils import torch_seed
 
 from typing import Union, List, Tuple
-
+import matplotlib.pyplot as plt
 
 class MemSegDataset(Dataset):
     def __init__(self, datadir: str, target: str, train: bool, 
@@ -81,29 +81,36 @@ class MemSegDataset(Dataset):
         # Anomaly Source
         if not self.to_memory and self.train:
             if self.anomaly_switch:
-                img, mask = self.generate_anomaly(img=img)
+                if "mobile" in file_path:
+                    img, mask = self.generate_anomaly(img=img, roi_area=[0, 75, 256, 175])
+                elif "pad" in file_path:
+                    img, mask = self.generate_anomaly(img=img, roi_area=[0, 50, 256, 100])
+                elif "pcb" in file_path:
+                    img, mask = self.generate_anomaly(img=img, roi_area=[0, 50, 256, 110])
+                else:
+                    img, mask = self.generate_anomaly(img=img)
                 target = 1
                 self.anomaly_switch = False
 
-                # ## DEBUG
-                # os.makedirs("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY", exist_ok=True)
-                # tik = str(time.time())
-                # img_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY/img_{tik}.png"
-                # mask_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY/mask_{tik}.png"
-                # if len(os.listdir("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/ANOMALY")) < 37:
-                #     cv2.imwrite(img_path, cv2.cvtColor(np.array(img).astype(np.uint8), cv2.COLOR_RGB2BGR))
-                #     cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                ## DEBUG
+                os.makedirs("./samples/DEBUG/ANOMALY", exist_ok=True)
+                tik = str(time.time())
+                img_path = f"./samples/DEBUG/ANOMALY/img_{tik}.png"
+                mask_path = f"./samples/DEBUG/ANOMALY/mask_{tik}.png"
+                if len(os.listdir("./samples/DEBUG/ANOMALY")) < 40:
+                    cv2.imwrite(img_path, cv2.cvtColor(np.array(img).astype(np.uint8), cv2.COLOR_RGB2BGR))
+                    # cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
             else:
                 self.anomaly_switch = True
 
         # else:
         #     ## DEBUG
-        #     os.makedirs("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY", exist_ok=True)
+        #     os.makedirs("./samples/DEBUG/MEMORY", exist_ok=True)
         #     tik = str(time.time())
-        #     img_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY/img_{tik}.png"
-        #     mask_path = f"/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY/mask_{tik}.png"
-        #     if len(os.listdir("/home/khoant/workspace/07.Anomaly-Detection/MemSeg/code/samples/DEBUG/MEMORY")) < 37:
+        #     img_path = f"./samples/DEBUG/MEMORY/img_{tik}.png"
+        #     mask_path = f"./samples/DEBUG/MEMORY/mask_{tik}.png"
+        #     if len(os.listdir("./samples/DEBUG/MEMORY")) < 37:
         #         cv2.imwrite(img_path, cv2.cvtColor(np.array(img).astype(np.uint8), cv2.COLOR_RGB2BGR))
         #         cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
@@ -136,7 +143,7 @@ class MemSegDataset(Dataset):
 
         return aug
 
-    def generate_anomaly(self, img: np.ndarray) -> List[np.ndarray]:
+    def generate_anomaly(self, img: np.ndarray, roi_area: List[int]=None) -> List[np.ndarray]:
         """
         STEP 1: Generating Mask
             - Target foreground mask
@@ -151,7 +158,16 @@ class MemSegDataset(Dataset):
 
         ### Step 1: Generating Mask
         # Target foreground mask
-        target_foreground_mask = self.generate_target_foreground_mask(img=img)
+        
+        if roi_area != None:
+            x1, y1, x2, y2 = roi_area
+            img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            target_foreground_mask = np.zeros(img_gray.shape)
+            target_foreground_mask[y1:y2, x1:x2] = 1
+            # plt.imshow(target_foreground_mask*255)
+            # plt.show()
+        else:
+            target_foreground_mask = self.generate_target_foreground_mask(img=img)
 
         # Perlin noise mask
         perlin_noise_mask, perlin_noise = self.generate_perlin_noise_mask()
@@ -172,23 +188,22 @@ class MemSegDataset(Dataset):
         anomaly_source_img = ((-mask_expanded + 1)*img) + anomaly_source_img
 
         ## DEBUG
-        os.makedirs("/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly", exist_ok=True)
+        os.makedirs("./samples/Debug/Anomaly", exist_ok=True)
         tik = str(time.time())
-        img_path = f"/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly/img_{tik}.png"
-        mask_path = f"/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly/mask_{tik}.png"
-        perlin_path = f"/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly/perlin_{tik}.png"
-        if len(os.listdir("/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly")) < 51:
+        img_path = f"./samples/Debug/Anomaly/img_{tik}.png"
+        mask_path = f"./samples/Debug/Anomaly/mask_{tik}.png"
+        # perlin_path = f"/mnt/data4/khoant/07.AD/MemSeg/code/samples/Debug/Anomaly/perlin_{tik}.png"
+        if len(os.listdir("./samples/Debug/Anomaly")) < 51:
             cv2.imwrite(img_path, cv2.cvtColor(np.array(anomaly_source_img).astype(np.uint8), cv2.COLOR_RGB2BGR))
-            cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
-            cv2.imwrite(perlin_path, cv2.cvtColor(np.array(perlin_noise*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+            # cv2.imwrite(mask_path, cv2.cvtColor(np.array(mask*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
+            # cv2.imwrite(perlin_path, cv2.cvtColor(np.array(perlin_noise*255).astype(np.uint8), cv2.COLOR_RGB2BGR))
 
         return (anomaly_source_img.astype(np.uint8), mask)
 
     def generate_target_foreground_mask(self, img: np.ndarray) -> np.ndarray:
         # Converting RGB into grayscale
         img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        
-        mode = 1
+        mode = 3
         if mode == 1: # USING THIS FOR NOT WHITE BACKGROUND
             _, target_background_mask = cv2.threshold(img_gray, 100, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
             target_background_mask = target_background_mask.astype(bool).astype(int)
