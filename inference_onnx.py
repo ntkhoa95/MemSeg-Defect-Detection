@@ -58,8 +58,7 @@ def processing_input(img, target_size=(256, 256)):
         ])
     img = transform(img)
     img = np.asarray(img.unsqueeze(0))
-    print(img.shape)
-
+    
     return img
 
 def predict(idx):
